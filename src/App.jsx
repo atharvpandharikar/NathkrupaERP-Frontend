@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Home from './pages/Home';
+import VehicleSearchResults from './pages/VehicleSearchResults';
 import ProductList from './pages/ProductList';
 import ProductDetails from './pages/ProductDetails';
 import Cart from './pages/Cart';
@@ -15,6 +16,7 @@ function App() {
       <MainLayout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/vehicle-parts" element={<VehicleSearchResults />} />
           <Route path="/products" element={<ProductList />} />
           <Route path="/products/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />

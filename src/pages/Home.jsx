@@ -1,9 +1,112 @@
-import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Star, ShoppingCart } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, ChevronDown, Star } from 'lucide-react';
+import {
+  fetchProductsList,
+  fetchCarMakers,
+  fetchCarModels,
+  fetchCarYears,
+  fetchCompatibilityGroupsForModel,
+  resolveApiMediaUrl,
+} from '../api/shop';
+import { formatProductPrice, productCode } from '../utils/productFormat';
+import ProductThumb from '../components/ProductThumb';
+
+const selectClass =
+  'w-full h-[60px] bg-white border border-gray-200 rounded-full px-6 pr-10 text-[14px] font-bold text-[#374151] shadow-[0_4px_20px_rgba(0,0,0,0.02)] focus:border-[#f47a4d] focus:ring-4 focus:ring-orange-50 focus:outline-none appearance-none cursor-pointer';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentThought, setCurrentThought] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+
+  const [partKeyword, setPartKeyword] = useState('');
+  const [makers, setMakers] = useState([]);
+  const [models, setModels] = useState([]);
+  const [years, setYears] = useState([]);
+  const [compatibilityGroups, setCompatibilityGroups] = useState([]);
+  const [makerId, setMakerId] = useState('');
+  const [modelId, setModelId] = useState('');
+  const [compatibilityGroupId, setCompatibilityGroupId] = useState('');
+  const [year, setYear] = useState('');
+  const [vehicleListsLoading, setVehicleListsLoading] = useState(false);
+
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true);
+    setProductsError(null);
+    try {
+      const data = await fetchProductsList({ pageSize: 12, page: 1 });
+      setProducts(Array.isArray(data.results) ? data.results : []);
+    } catch (e) {
+      setProductsError(e instanceof Error ? e.message : 'Could not load products.');
+      setProducts([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  useEffect(() => {
+    fetchCarMakers()
+      .then((r) => setMakers(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setMakers([]));
+  }, []);
+
+  useEffect(() => {
+    if (!makerId) {
+      setModels([]);
+      return;
+    }
+    setVehicleListsLoading(true);
+    fetchCarModels(makerId)
+      .then((r) => setModels(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setModels([]))
+      .finally(() => setVehicleListsLoading(false));
+  }, [makerId]);
+
+  useEffect(() => {
+    if (!modelId) {
+      setCompatibilityGroups([]);
+      return;
+    }
+    setVehicleListsLoading(true);
+    fetchCompatibilityGroupsForModel(modelId, { maker_id: makerId || undefined })
+      .then((r) => setCompatibilityGroups(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setCompatibilityGroups([]))
+      .finally(() => setVehicleListsLoading(false));
+  }, [modelId, makerId]);
+
+  useEffect(() => {
+    if (!modelId || !compatibilityGroupId) {
+      setYears([]);
+      return;
+    }
+    fetchCarYears(modelId, { compatibility_group_id: compatibilityGroupId })
+      .then((r) => setYears(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setYears([]));
+  }, [modelId, compatibilityGroupId]);
+
+  const goVehiclePartsSearch = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (makerId) qs.set('maker_id', makerId);
+    if (modelId) qs.set('model_id', modelId);
+    if (compatibilityGroupId) qs.set('compatibility_group_id', compatibilityGroupId);
+    if (year) qs.set('year', year);
+    if (partKeyword.trim()) qs.set('q', partKeyword.trim());
+    const s = qs.toString();
+    navigate(s ? `/vehicle-parts?${s}` : '/vehicle-parts');
+  }, [navigate, makerId, modelId, compatibilityGroupId, year, partKeyword]);
+
+  const goTextSearch = useCallback(() => {
+    if (!partKeyword.trim()) return;
+    navigate(`/vehicle-parts?q=${encodeURIComponent(partKeyword.trim())}`);
+  }, [navigate, partKeyword]);
 
   const slides = [
     {
@@ -111,6 +214,9 @@ const Home = () => {
                 <div className="bg-white border border-gray-200 rounded-full px-6 py-4 flex items-center shadow-[0_4px_20px_rgba(0,0,0,0.02)] focus-within:border-[#f47a4d] focus-within:ring-4 focus-within:ring-orange-50 transition-all">
                   <input 
                     type="text" 
+                    value={partKeyword}
+                    onChange={(e) => setPartKeyword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && goTextSearch()}
                     placeholder='Search: "Brake Pads"' 
                     className="w-full bg-transparent outline-none text-[#111827] font-bold text-sm placeholder-[#9ca3af]"
                   />
@@ -148,19 +254,92 @@ const Home = () => {
         {/* Bottom Filter Row */}
         <div className="mt-8">
           <label className="block text-[#4b5563] text-[14px] font-bold mb-5">Search by Vehicle Details</label>
-          <div className="flex flex-wrap lg:flex-nowrap gap-4 items-center">
-            {[
-              "Select Car Maker", 
-              "Select Model Line", 
-              "Select Year", 
-              "Select Model"
-            ].map((placeholder) => (
-              <div key={placeholder} className="flex-1 min-w-[180px] h-[60px] bg-white border border-gray-200 rounded-full px-6 flex items-center justify-between cursor-pointer hover:border-[#f47a4d] transition shadow-[0_4px_20px_rgba(0,0,0,0.02)] group">
-                <span className="text-[#374151] text-[14px] font-bold group-hover:text-[#111827]">{placeholder}</span>
-                <ChevronDown className="w-4 h-4 text-[#4b5563] group-hover:text-[#f47a4d]" />
-              </div>
-            ))}
-            <button className="bg-[#f47a4d] text-white px-10 h-[60px] rounded-full font-black text-lg flex items-center justify-center hover:bg-[#e3693c] transition-all hover:scale-[1.02] shadow-xl shadow-orange-200/40 space-x-2">
+          <div className="flex flex-wrap lg:flex-nowrap gap-4 items-stretch">
+            <div className="relative flex-1 min-w-[180px]">
+              <select
+                aria-label="Car maker"
+                className={selectClass}
+                value={makerId}
+                onChange={(e) => {
+                  setMakerId(e.target.value);
+                  setModelId('');
+                  setCompatibilityGroupId('');
+                  setYear('');
+                }}
+                disabled={vehicleListsLoading}
+              >
+                <option value="">Select Car Maker</option>
+                {makers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
+            </div>
+            <div className="relative flex-1 min-w-[180px]">
+              <select
+                aria-label="Model line"
+                className={selectClass}
+                value={modelId}
+                onChange={(e) => {
+                  setModelId(e.target.value);
+                  setCompatibilityGroupId('');
+                  setYear('');
+                }}
+                disabled={!makerId}
+              >
+                <option value="">Select Model Line</option>
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
+            </div>
+            <div className="relative flex-1 min-w-[200px]">
+              <select
+                aria-label="Compatibility group"
+                className={selectClass}
+                value={compatibilityGroupId}
+                onChange={(e) => {
+                  setCompatibilityGroupId(e.target.value);
+                  setYear('');
+                }}
+                disabled={!modelId}
+              >
+                <option value="">Select Compatibility Group</option>
+                {compatibilityGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
+            </div>
+            <div className="relative flex-1 min-w-[140px]">
+              <select
+                aria-label="Year"
+                className={selectClass}
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                disabled={!compatibilityGroupId}
+              >
+                <option value="">Select Year</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
+            </div>
+            <button
+              type="button"
+              onClick={goVehiclePartsSearch}
+              className="bg-[#f47a4d] text-white px-10 min-h-[60px] rounded-full font-black text-lg flex items-center justify-center hover:bg-[#e3693c] transition-all hover:scale-[1.02] shadow-xl shadow-orange-200/40 space-x-2 shrink-0"
+            >
               <Search className="w-5 h-5 stroke-[3]" />
               <span>Search</span>
             </button>
@@ -220,32 +399,65 @@ const Home = () => {
           ))}
         </div>
 
-        {/* Compact Product Grid */}
+        {/* Product grid — from FetchProducts API */}
+        {productsError && (
+          <div className="mb-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-800 flex flex-wrap items-center justify-between gap-3">
+            <span>{productsError}</span>
+            <button
+              type="button"
+              onClick={loadProducts}
+              className="font-bold text-red-900 underline underline-offset-2 hover:text-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-20">
-          {[
-            { brand: "Roots", model: "MS...2H", name: "Megasonic 12V Ht", price: "₹ 1,617.00" },
-            { brand: "Waves", model: "MS...5J", name: "Sonic Wave 24V Ht", price: "₹ 2,150.00" },
-            { brand: "Tides", model: "MS...3K", name: "Tidal Force 36V Ht", price: "₹ 3,200.00" },
-            { brand: "Storms", model: "MS...8D", name: "Tempest 48V Ht", price: "₹ 4,500.00" },
-            { brand: "Gusts", model: "MS...6F", name: "Whirlwind 60V Ht", price: "₹ 5,750.00" },
-            { brand: "Currents", model: "MS...7V", name: "Oceanic Flow 72V Ht", price: "₹ 6,800.00" },
-          ].map((item, idx) => (
-            <div key={idx} className="cursor-pointer group">
-              <div className="aspect-square bg-gray-50 rounded-[16px] mb-3 flex items-center justify-center p-6 group-hover:bg-gray-100 transition-colors">
-                <div className="w-full aspect-square rounded-full border-[6px] border-white bg-gray-200 shadow-sm flex items-center justify-center overflow-hidden">
-                   <div className="w-full h-full border-4 border-gray-300 rounded-full flex items-center justify-center">
-                     <div className="w-1/2 h-1/2 rounded-full border-2 border-gray-400" />
-                   </div>
-                </div>
+          {productsLoading &&
+            Array.from({ length: 12 }).map((_, idx) => (
+              <div key={`sk-${idx}`} className="animate-pulse">
+                <div className="aspect-square bg-gray-100 rounded-[16px] mb-3" />
+                <div className="h-3 bg-gray-100 rounded w-2/3 mb-2" />
+                <div className="h-3 bg-gray-100 rounded w-full mb-2" />
+                <div className="h-4 bg-gray-100 rounded w-1/2" />
               </div>
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-[12px] font-bold text-gray-400">{item.brand}</span>
-                <span className="text-[10px] font-bold text-gray-300 tracking-wider uppercase">{item.model}</span>
-              </div>
-              <h4 className="text-[13px] font-bold text-[#111827] line-clamp-1 mb-1">{item.name}</h4>
-              <p className="text-[14px] font-black text-[#111827]">{item.price}</p>
-            </div>
-          ))}
+            ))}
+
+          {!productsLoading &&
+            products.map((item) => {
+              const brandName = item.brand?.name || '—';
+              const code = productCode(item);
+              return (
+                <Link
+                  key={item.product_id}
+                  to={`/products/${item.product_id}`}
+                  className="cursor-pointer group block text-left"
+                >
+                  <div className="aspect-square bg-gray-50 rounded-[16px] mb-3 flex items-center justify-center p-4 group-hover:bg-gray-100 transition-colors overflow-hidden">
+                    <ProductThumb src={resolveApiMediaUrl(item.image)} title={item.title} />
+                  </div>
+                  <div className="flex justify-between items-start mb-1 gap-1">
+                    <span className="text-[12px] font-bold text-gray-400 truncate">{brandName}</span>
+                    {code ? (
+                      <span className="text-[10px] font-bold text-gray-300 tracking-wider uppercase shrink-0">
+                        {code}
+                      </span>
+                    ) : null}
+                  </div>
+                  <h4 className="text-[13px] font-bold text-[#111827] line-clamp-2 mb-1 min-h-[2.5rem]">
+                    {item.title || 'Untitled'}
+                  </h4>
+                  <p className="text-[14px] font-black text-[#111827]">{formatProductPrice(item)}</p>
+                </Link>
+              );
+            })}
+
+          {!productsLoading && !products.length && !productsError && (
+            <p className="col-span-full text-center text-[#6b7280] py-8">
+              No active products to show yet.
+            </p>
+          )}
         </div>
 
         {/* Categories Section */}
