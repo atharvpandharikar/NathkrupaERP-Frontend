@@ -8,6 +8,8 @@ import Cart from './pages/Cart';
 import OEMCatalogue from './pages/OEMCatalogue';
 import OEMModelSelect from './pages/OEMModelSelect';
 import Account from './pages/Account';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import './App.css';
 
 function App() {
@@ -23,6 +25,8 @@ function App() {
           <Route path="/oem-catalogue" element={<OEMCatalogue />} />
           <Route path="/oem-catalogue/:makerId" element={<OEMModelSelect />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
         </Routes>
       </MainLayout>
     </Router>

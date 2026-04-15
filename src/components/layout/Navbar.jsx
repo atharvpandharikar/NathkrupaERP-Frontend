@@ -67,7 +67,7 @@ const Navbar = () => {
               <Heart className="w-6 h-6 stroke-[1.5]" />
             </button>
 
-            <Link to="/account" className="p-3 text-gray-700 hover:text-blue-600 transition-colors">
+            <Link to="/login" className="p-3 text-gray-700 hover:text-blue-600 transition-colors">
               <User className="w-6 h-6 stroke-[1.5]" />
             </Link>
           </div>

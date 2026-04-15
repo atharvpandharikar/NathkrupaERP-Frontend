@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, RotateCcw, Box, Building2, LayoutGrid, Package, User, Heart, MapPin, FileText, Building, Pencil, Lock, ArrowLeft, Mail, Smartphone, X } from 'lucide-react';
 
 const Account = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Orders');
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('Completed');
@@ -75,9 +77,18 @@ const Account = () => {
     <div className="bg-white min-h-screen font-sans">
       <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-10 md:py-16">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-[42px] font-serif font-bold text-[#111827] mb-2 tracking-tight">My Account</h1>
-          <p className="text-gray-400 text-lg">Manage all your details at one place.</p>
+        <div className="mb-12 flex justify-between items-end">
+          <div>
+            <h1 className="text-[42px] font-serif font-bold text-[#111827] mb-2 tracking-tight">My Account</h1>
+            <p className="text-gray-400 text-lg">Manage all your details at one place.</p>
+          </div>
+          <button 
+            onClick={() => navigate('/login')}
+            className="flex items-center px-6 py-3 border border-red-100 text-red-500 rounded-full font-bold text-[14px] hover:bg-red-50 transition-all group"
+          >
+            <Lock className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
+            Logout
+          </button>
         </div>
 
         {/* Navigation Tabs */}
