@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { registerCustomer } from '../api/auth';
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,12 +11,38 @@ const Signup = () => {
     password: '',
     agreedToTerms: false
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
 
-  const handleSignup = (e) => {
+  const normalizeUsername = (fullName, email) => {
+    const base =
+      String(fullName || '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .toLowerCase() || String(email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    return (base || `customer${Date.now()}`).slice(0, 40);
+  };
+
+  const handleSignup = async (e) => {
     e.preventDefault();
-    console.log('Signing up with:', formData);
-    navigate('/account');
+    if (submitting) return;
+    setSubmitting(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      await registerCustomer({
+        username: normalizeUsername(formData.fullName, formData.email),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
+      setSuccessMessage('Account created as customer. Please verify your email, then login.');
+      setTimeout(() => navigate('/login'), 1200);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create account.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogleSignup = () => {
@@ -39,6 +66,16 @@ const Signup = () => {
         </div>
 
         <form className="mt-8 space-y-5" onSubmit={handleSignup}>
+          {error ? (
+            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
+          {successMessage ? (
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {successMessage}
+            </div>
+          ) : null}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2 ml-1" htmlFor="fullName">
@@ -132,9 +169,10 @@ const Signup = () => {
 
           <button
             type="submit"
+            disabled={submitting}
             className="group relative w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl text-white bg-gray-900 hover:bg-black transition-all duration-300 font-black text-lg shadow-xl shadow-gray-200"
           >
-            Create Account
+            {submitting ? 'Creating account...' : 'Create Account'}
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </form>

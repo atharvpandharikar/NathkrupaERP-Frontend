@@ -1,16 +1,34 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   ShoppingCart, 
   Heart, 
   ChevronDown, 
   LayoutDashboard,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
+import { logoutWithRefresh } from '../../api/auth';
+import { clearCredentials } from '../../store/slices/authSlice';
 
 const Navbar = () => {
   const totalQuantity = useSelector(state => state.cart.totalQuantity);
+  const auth = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      await logoutWithRefresh({
+        refreshToken: auth.tokens?.refresh,
+        accessToken: auth.tokens?.access,
+      });
+    } catch {
+      // ignore API failures and clear local auth anyway
+    } finally {
+      dispatch(clearCredentials());
+    }
+  };
 
   return (
     <nav className="bg-white border-b sticky top-0 z-50">
@@ -67,9 +85,39 @@ const Navbar = () => {
               <Heart className="w-6 h-6 stroke-[1.5]" />
             </button>
 
-            <Link to="/login" className="p-3 text-gray-700 hover:text-blue-600 transition-colors">
-              <User className="w-6 h-6 stroke-[1.5]" />
-            </Link>
+            {auth.isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center px-4 py-2 rounded-full border border-gray-200 bg-gray-50">
+                  <User className="w-4 h-4 text-gray-600 mr-2" />
+                  <span className="text-sm font-bold text-gray-700">
+                    {auth.user?.username || auth.user?.email || 'Customer'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="p-3 text-gray-700 hover:text-red-600 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-6 h-6 stroke-[1.5]" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-bold text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 text-sm font-bold text-white bg-gray-900 rounded-full hover:bg-black transition-colors"
+                >
+                  Signup
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

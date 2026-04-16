@@ -1,18 +1,45 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Github } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { loginWithPassword } from '../api/auth';
+import { setCredentials } from '../store/slices/authSlice';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login
-    console.log('Logging in with:', email, password);
-    navigate('/account');
+    if (submitting) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const data = await loginWithPassword({
+        identifier: identifier.trim(),
+        password,
+      });
+      dispatch(
+        setCredentials({
+          user: {
+            email: data.email,
+            username: data.username || data.email,
+            role: 'customer',
+          },
+          tokens: data.tokens,
+        })
+      );
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to login.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -29,24 +56,29 @@ const Login = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          {error ? (
+            <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          ) : null}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1" htmlFor="email">
-                Email Address
+              <label className="block text-sm font-bold text-gray-700 mb-2 ml-1" htmlFor="identifier">
+                Username
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-[#7c3aed] transition-colors" />
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-[#7c3aed] transition-colors" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="identifier"
+                  name="identifier"
+                  type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   className="block w-full pl-11 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-gray-900 font-bold placeholder-gray-400 focus:ring-2 focus:ring-[#7c3aed]/20 transition-all outline-none"
-                  placeholder="name@company.com"
+                  placeholder="Enter username"
                 />
               </div>
             </div>
@@ -103,9 +135,10 @@ const Login = () => {
 
           <button
             type="submit"
+            disabled={submitting}
             className="group relative w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl text-white bg-gray-900 hover:bg-black transition-all duration-300 font-black text-lg shadow-xl shadow-gray-200"
           >
-            Sign In
+            {submitting ? 'Signing in...' : 'Sign In'}
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </form>

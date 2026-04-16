@@ -6,7 +6,7 @@ import {
   fetchCarMakers,
   fetchCarModels,
   fetchCarYears,
-  fetchCompatibilityGroupsForModel,
+  fetchCarVariants,
   resolveApiMediaUrl,
 } from '../api/shop';
 import { formatProductPrice, productCode } from '../utils/productFormat';
@@ -27,11 +27,11 @@ const Home = () => {
   const [makers, setMakers] = useState([]);
   const [models, setModels] = useState([]);
   const [years, setYears] = useState([]);
-  const [compatibilityGroups, setCompatibilityGroups] = useState([]);
+  const [variants, setVariants] = useState([]);
   const [makerId, setMakerId] = useState('');
   const [modelId, setModelId] = useState('');
-  const [compatibilityGroupId, setCompatibilityGroupId] = useState('');
   const [year, setYear] = useState('');
+  const [variantId, setVariantId] = useState('');
   const [vehicleListsLoading, setVehicleListsLoading] = useState(false);
 
   const loadProducts = useCallback(async () => {
@@ -72,36 +72,34 @@ const Home = () => {
 
   useEffect(() => {
     if (!modelId) {
-      setCompatibilityGroups([]);
-      return;
-    }
-    setVehicleListsLoading(true);
-    fetchCompatibilityGroupsForModel(modelId, { maker_id: makerId || undefined })
-      .then((r) => setCompatibilityGroups(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setCompatibilityGroups([]))
-      .finally(() => setVehicleListsLoading(false));
-  }, [modelId, makerId]);
-
-  useEffect(() => {
-    if (!modelId || !compatibilityGroupId) {
       setYears([]);
       return;
     }
-    fetchCarYears(modelId, { compatibility_group_id: compatibilityGroupId })
+    fetchCarYears(modelId)
       .then((r) => setYears(Array.isArray(r.data) ? r.data : []))
       .catch(() => setYears([]));
-  }, [modelId, compatibilityGroupId]);
+  }, [modelId]);
+
+  useEffect(() => {
+    if (!modelId || !year) {
+      setVariants([]);
+      return;
+    }
+    fetchCarVariants(modelId, year || undefined)
+      .then((r) => setVariants(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setVariants([]));
+  }, [modelId, year]);
 
   const goVehiclePartsSearch = useCallback(() => {
     const qs = new URLSearchParams();
     if (makerId) qs.set('maker_id', makerId);
     if (modelId) qs.set('model_id', modelId);
-    if (compatibilityGroupId) qs.set('compatibility_group_id', compatibilityGroupId);
     if (year) qs.set('year', year);
+    if (variantId) qs.set('variant_id', variantId);
     if (partKeyword.trim()) qs.set('q', partKeyword.trim());
     const s = qs.toString();
     navigate(s ? `/vehicle-parts?${s}` : '/vehicle-parts');
-  }, [navigate, makerId, modelId, compatibilityGroupId, year, partKeyword]);
+  }, [navigate, makerId, modelId, year, variantId, partKeyword]);
 
   const goTextSearch = useCallback(() => {
     if (!partKeyword.trim()) return;
@@ -263,8 +261,8 @@ const Home = () => {
                 onChange={(e) => {
                   setMakerId(e.target.value);
                   setModelId('');
-                  setCompatibilityGroupId('');
                   setYear('');
+                  setVariantId('');
                 }}
                 disabled={vehicleListsLoading}
               >
@@ -284,8 +282,8 @@ const Home = () => {
                 value={modelId}
                 onChange={(e) => {
                   setModelId(e.target.value);
-                  setCompatibilityGroupId('');
                   setYear('');
+                  setVariantId('');
                 }}
                 disabled={!makerId}
               >
@@ -298,38 +296,38 @@ const Home = () => {
               </select>
               <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
             </div>
-            <div className="relative flex-1 min-w-[200px]">
-              <select
-                aria-label="Compatibility group"
-                className={selectClass}
-                value={compatibilityGroupId}
-                onChange={(e) => {
-                  setCompatibilityGroupId(e.target.value);
-                  setYear('');
-                }}
-                disabled={!modelId}
-              >
-                <option value="">Select Compatibility Group</option>
-                {compatibilityGroups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
-            </div>
             <div className="relative flex-1 min-w-[140px]">
               <select
                 aria-label="Year"
                 className={selectClass}
                 value={year}
-                onChange={(e) => setYear(e.target.value)}
-                disabled={!compatibilityGroupId}
+                onChange={(e) => {
+                  setYear(e.target.value);
+                  setVariantId('');
+                }}
+                disabled={!modelId}
               >
                 <option value="">Select Year</option>
                 {years.map((y) => (
                   <option key={y} value={y}>
                     {y}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4b5563]" />
+            </div>
+            <div className="relative flex-1 min-w-[200px]">
+              <select
+                aria-label="Variant"
+                className={selectClass}
+                value={variantId}
+                onChange={(e) => setVariantId(e.target.value)}
+                disabled={!year}
+              >
+                <option value="">Select Variant</option>
+                {variants.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
                   </option>
                 ))}
               </select>
