@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, RotateCcw, Box, Building2, LayoutGrid, Package, User, Heart, MapPin, FileText, Building, Pencil, Lock, ArrowLeft, Mail, Smartphone, X } from 'lucide-react';
+import { ChevronDown, RotateCcw, Box, Building2, LayoutGrid, Package, User, Heart, MapPin, FileText, Building, Pencil, Lock, ArrowLeft, Mail, Smartphone, X, Trash2, Plus, ArrowRight } from 'lucide-react';
 
 const Account = () => {
   const navigate = useNavigate();
@@ -38,6 +38,7 @@ const Account = () => {
   ];
 
   const tabs = [
+    { id: 'Garage', icon: Building },
     { id: 'Orders', icon: Package },
     { id: 'Profile', icon: User },
     { id: 'Wishlists', icon: Heart },
@@ -759,8 +760,65 @@ const Account = () => {
           </div>
         )}
 
+        {activeTab === 'Garage' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="mb-10">
+              <h2 className="text-[32px] font-serif font-bold text-[#111827] mb-2 tracking-tight">Garage</h2>
+              <p className="text-gray-500 text-[18px]">Add your cars here to browse parts effortlessly.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-12">
+              {/* Vehicle Card 1 */}
+              <div className="group">
+                <div className="relative aspect-[16/10] bg-[#f3f4f6] rounded-[24px] mb-6 overflow-hidden">
+                  {/* Action Icons */}
+                  <div className="absolute top-6 right-6 flex items-center space-x-3">
+                    <button className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-[#7c3aed] transition-all shadow-sm">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button className="w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Open Catalog Button */}
+                  <div className="absolute bottom-6 right-6">
+                    <button className="flex items-center px-5 py-2.5 bg-gray-200 text-[#111827] rounded-full text-[13px] font-black hover:bg-gray-300 transition-all">
+                      Open Catalog
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Vehicle Details */}
+                <div className="flex items-start justify-between mb-6 pr-4">
+                  <div>
+                    <h3 className="text-[28px] font-black text-[#111827] leading-tight">BE6</h3>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[14px] font-bold text-gray-500">Electronic Vehicles</p>
+                    <p className="text-[14px] font-bold text-gray-500">Model Number: 2024</p>
+                  </div>
+                </div>
+
+                <button className="w-full py-4.5 bg-gray-200 text-[#111827] rounded-[14px] font-black text-[15px] hover:bg-gray-300 transition-all">
+                  Track Orders
+                </button>
+              </div>
+
+              {/* Add to Garage Card */}
+              <div className="aspect-[16/10] bg-[#f9fafb] border-2 border-dashed border-gray-100 rounded-[24px] flex items-center justify-center group cursor-pointer hover:border-[#7c3aed]/30 transition-all">
+                <button className="flex items-center px-8 py-3.5 bg-gray-200 text-[#111827] rounded-full text-[14px] font-black group-hover:bg-[#7c3aed] group-hover:text-white transition-all shadow-sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to Garage
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Placeholder for other tabs */}
-        {activeTab !== 'Orders' && activeTab !== 'Profile' && (
+        {activeTab !== 'Orders' && activeTab !== 'Profile' && activeTab !== 'Garage' && (
           <div className="py-20 text-center animate-in fade-in zoom-in-95 duration-500">
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
               <User className="w-10 h-10" />
